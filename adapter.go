@@ -4,7 +4,9 @@ import (
 	"fmt"
 
 	"github.com/EnsurityTechnologies/config"
+	"github.com/EnsurityTechnologies/uuid"
 	"github.com/jinzhu/gorm"
+
 	_ "github.com/jinzhu/gorm/dialects/mssql"
 )
 
@@ -82,8 +84,8 @@ func (adapter *Adapter) AddForienKey(tableName string, value interface{}, colStr
 }
 
 // Delete function delete entry from the table
-func (adapter *Adapter) Delete(tenantID int, tableName string, format string, value interface{}, item interface{}) error {
-	if tenantID != 0 {
+func (adapter *Adapter) Delete(tenantID interface{}, tableName string, format string, value interface{}, item interface{}) error {
+	if tenantID != uuid.Nil {
 		formatStr := TenantIDStr + "=? AND " + format
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Delete(item).Error
 		return err
@@ -100,8 +102,8 @@ func (adapter *Adapter) Create(tableName string, item interface{}) error {
 }
 
 // Find function finds the value from the table
-func (adapter *Adapter) Find(tenantID int, tableName string, format string, value interface{}, item interface{}) error {
-	if tenantID != 0 {
+func (adapter *Adapter) Find(tenantID interface{}, tableName string, format string, value interface{}, item interface{}) error {
+	if tenantID != uuid.Nil {
 		formatStr := TenantIDStr + "=? AND " + format
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Find(item).Error
 		return err
@@ -111,9 +113,35 @@ func (adapter *Adapter) Find(tenantID int, tableName string, format string, valu
 	}
 }
 
+// FindMult function finds the value from the table
+func (adapter *Adapter) FindMult(tenantID interface{}, tableName string, format1 string, format2 string, value1 interface{}, value2 interface{}, item interface{}) error {
+	if tenantID != uuid.Nil {
+		formatStr1 := TenantIDStr + "=? AND " + format1
+		formatStr2 := TenantIDStr + "=? AND " + format2
+		err := adapter.db.Table(tableName).Where(formatStr1, tenantID, value1).Or(formatStr2, tenantID, value2).Find(item).Error
+		return err
+	} else {
+		err := adapter.db.Table(tableName).Where(format1, value1).Or(format2, value2).Find(item).Error
+		return err
+	}
+}
+
+// FindAnd function finds the value from the table
+func (adapter *Adapter) FindAnd(tenantID interface{}, tableName string, format1 string, format2 string, value1 interface{}, value2 interface{}, item interface{}) error {
+	if tenantID != uuid.Nil {
+		formatStr1 := TenantIDStr + "=? AND " + format1
+		formatStr2 := TenantIDStr + "=? AND " + format2
+		err := adapter.db.Table(tableName).Where(formatStr1, tenantID, value1).Where(formatStr2, tenantID, value2).Find(item).Error
+		return err
+	} else {
+		err := adapter.db.Table(tableName).Where(format1, value1).Or(format2, value2).Find(item).Error
+		return err
+	}
+}
+
 // FindA function finds the value from the table
-func (adapter *Adapter) FindA(tenantID int, tableName string, format string, value interface{}, item interface{}, item1 interface{}) error {
-	if tenantID != 0 {
+func (adapter *Adapter) FindA(tenantID interface{}, tableName string, format string, value interface{}, item interface{}, item1 interface{}) error {
+	if tenantID != uuid.Nil {
 		formatStr := TenantIDStr + "=? AND " + format
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Find(item).Association("UserId").Find(item1).Error
 		return err
@@ -124,8 +152,8 @@ func (adapter *Adapter) FindA(tenantID int, tableName string, format string, val
 }
 
 // Updates function updates the value in the table
-func (adapter *Adapter) Updates(tenantID int, tableName string, format string, value interface{}, item interface{}) error {
-	if tenantID != 0 {
+func (adapter *Adapter) Updates(tenantID interface{}, tableName string, format string, value interface{}, item interface{}) error {
+	if tenantID != uuid.Nil {
 		formatStr := TenantIDStr + "=? AND " + format
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Updates(item).Error
 		return err
