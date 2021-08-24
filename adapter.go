@@ -34,15 +34,16 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	case sqlDB:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
 		db, err = gorm.Open("mssql", dsn)
-		break
+	case postgressDB:
+		dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.DBAddress, cfg.DBPort, cfg.DBUserName, cfg.DBName, cfg.DBPassword)
+		db, err = gorm.Open("postgres", dsn)
 	default:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
 		db, err = gorm.Open("mssql", dsn)
-		break
 	}
 
 	if err != nil {
-		fmt.Println("Error %v", err)
+		fmt.Printf("DB Adpater Error : %v", err)
 		return nil, err
 	}
 	adapter := &Adapter{
