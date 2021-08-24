@@ -163,3 +163,15 @@ func (adapter *Adapter) Updates(tenantID interface{}, tableName string, format s
 		return err
 	}
 }
+
+// Save function save all the value in the table
+func (adapter *Adapter) Save(tenantID interface{}, tableName string, format string, value interface{}, item interface{}) error {
+	if tenantID != uuid.Nil {
+		formatStr := TenantIDStr + "=? AND " + format
+		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Save(item).Error
+		return err
+	} else {
+		err := adapter.db.Table(tableName).Where(format, value).Save(item).Error
+		return err
+	}
+}
