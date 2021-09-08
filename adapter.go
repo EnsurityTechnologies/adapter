@@ -14,6 +14,7 @@ const (
 	postgressDB string = "PostgressSQL"
 	sqlDB       string = "SQLServer"
 	mysqlDB     string = "MySQL"
+	sqlite3     string = "Sqlite3"
 )
 
 // TenantIDStr ...
@@ -37,6 +38,8 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	case postgressDB:
 		dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.DBAddress, cfg.DBPort, cfg.DBUserName, cfg.DBName, cfg.DBPassword)
 		db, err = gorm.Open("postgres", dsn)
+	case sqlite3:
+		db, err = gorm.Open("sqlite3", cfg.DBAddress)
 	default:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
 		db, err = gorm.Open("mssql", dsn)
