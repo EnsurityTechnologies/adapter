@@ -8,6 +8,7 @@ import (
 	"github.com/jinzhu/gorm"
 
 	_ "github.com/jinzhu/gorm/dialects/mssql"
+	_ "github.com/mattn/go-sqlite3" // Blank import needed to import sqlite3
 )
 
 const (
@@ -40,6 +41,10 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 		db, err = gorm.Open("postgres", dsn)
 	case sqlite3:
 		db, err = gorm.Open("sqlite3", cfg.DBAddress)
+		if err == nil {
+			db.LogMode(false)
+			db.DB().SetMaxOpenConns(1)
+		}
 	default:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
 		db, err = gorm.Open("mssql", dsn)
