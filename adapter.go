@@ -62,6 +62,10 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	return adapter, err
 }
 
+func (adapter *Adapter) GetDB() *gorm.DB {
+    return adapter.db
+}
+
 // InitTable Initialize table
 func (adapter *Adapter) InitTable(tableName string, item interface{}) error {
 	err := adapter.db.Table(tableName).AutoMigrate(item).Error
