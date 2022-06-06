@@ -115,7 +115,7 @@ func (adapter *Adapter) DeleteNew(tenantID interface{}, tableName string, format
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Delete(item).Error
 		return err
 	} else {
-		err := adapter.db.Table(tableName).Where(format, value).Delete(item).Error
+		err := adapter.db.Table(tableName).Where(format, value...).Delete(item).Error
 		return err
 	}
 }
@@ -145,7 +145,7 @@ func (adapter *Adapter) FindNew(tenantID interface{}, tableName string, format s
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Find(item).Error
 		return err
 	} else {
-		err := adapter.db.Table(tableName).Where(format, value).Find(item).Error
+		err := adapter.db.Table(tableName).Where(format, value...).Find(item).Error
 		return err
 	}
 }
@@ -201,13 +201,13 @@ func (adapter *Adapter) Updates(tenantID interface{}, tableName string, format s
 }
 
 // UpdateNew function updates the value in the table
-func (adapter *Adapter) UpdateNew(tenantID interface{}, tableName string, format string, value interface{}, item interface{}) error {
+func (adapter *Adapter) UpdateNew(tenantID interface{}, tableName string, format string, item interface{}, value ...interface{}) error {
 	if tenantID != uuid.Nil {
 		formatStr := TenantIDStr + "=? AND " + format
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Updates(item).Error
 		return err
 	} else {
-		err := adapter.db.Table(tableName).Where(format, value).Updates(item).Error
+		err := adapter.db.Table(tableName).Where(format, value...).Updates(item).Error
 		return err
 	}
 }
@@ -231,7 +231,7 @@ func (adapter *Adapter) SaveNew(tenantID interface{}, tableName string, format s
 		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Save(item).Error
 		return err
 	} else {
-		err := adapter.db.Table(tableName).Where(format, value).Save(item).Error
+		err := adapter.db.Table(tableName).Where(format, value...).Save(item).Error
 		return err
 	}
 }

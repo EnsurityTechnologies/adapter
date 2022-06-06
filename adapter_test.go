@@ -1,0 +1,67 @@
+package adapter
+
+import (
+	"os"
+	"testing"
+
+	"github.com/EnsurityTechnologies/config"
+	"github.com/EnsurityTechnologies/uuid"
+)
+
+type model struct {
+	ID      int    `gorm:"column:Id;primary_key;auto_increment"`
+	Name    string `gorm:"column:Name;not null"`
+	Age     int    `gorm:"column:Age"`
+	Address string `gorm:"column:Address"`
+}
+
+func TestBasic(t *testing.T) {
+	cfg := &config.Config{
+		DBAddress: "test.db",
+		DBType:    "Sqlite3",
+	}
+	ad, err := NewAdapter(cfg)
+	if err != nil {
+		t.Fatal("Failed to initialize adapter")
+	}
+	if err := ad.InitTable("user", &model{}); err != nil {
+		t.Fatal("Failed to initialize table", err.Error())
+	}
+	if err := ad.Create("user", &model{Name: "TestUser1", Age: 32, Address: "Hyderabad"}); err != nil {
+		t.Fatal("Failed to create data", err.Error())
+	}
+	if err := ad.Create("user", &model{Name: "TestUser2", Age: 35, Address: "Hyderabad"}); err != nil {
+		t.Fatal("Failed to create data", err.Error())
+	}
+	if err := ad.Create("user", &model{Name: "TestUser3", Age: 40, Address: "Hyderabad"}); err != nil {
+		t.Fatal("Failed to create data", err.Error())
+	}
+	if err := ad.Create("user", &model{Name: "TestUser4", Age: 45, Address: "Hyderabad"}); err != nil {
+		t.Fatal("Failed to create data", err.Error())
+	}
+	var m model
+	if err := ad.FindNew(uuid.Nil, "user", "Name=?", &m, "TestUser1"); err != nil {
+		t.Fatal("Failed to read data", err.Error())
+	}
+	if m.Name != "TestUser1" {
+		t.Fatal("Data mismatch", err.Error())
+	}
+	var m1 []model
+	if err := ad.FindNew(uuid.Nil, "user", "Age>? AND  Age<?", &m1, 33, 41); err != nil {
+		t.Fatal("Failed to read data", err.Error())
+	}
+	if len(m1) != 2 {
+		t.Fatal("Data mismatch")
+	}
+	if m1[0].Name != "TestUser2" || m1[1].Name != "TestUser3" {
+		t.Fatal("Data mismatch")
+	}
+
+	if err := ad.db.Close(); err != nil {
+		t.Fatal("Failed to close db", err.Error())
+	}
+	if err := os.Remove("test.db"); err != nil {
+		t.Fatal("Failed to delete db", err.Error())
+	}
+
+}
