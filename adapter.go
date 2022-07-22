@@ -92,7 +92,7 @@ func (adapter *Adapter) DropTable(tableName string) error {
 
 // DropTable drop the table
 func (adapter *Adapter) AddForienKey(tableName string, value interface{}, colStr string, tableStr string) error {
-	err := adapter.db.Table(tableName).Model(value).AddForeignKey(colStr, tableStr, "RESTRICT", "RESTRICT").Error
+	err := adapter.db.Table(tableName).Model(value).AddForeignKey(colStr, tableStr, "CASCADE", "CASCADE").Error
 	return err
 }
 
@@ -111,8 +111,9 @@ func (adapter *Adapter) Delete(tenantID interface{}, tableName string, format st
 // DeleteNew function delete entry from the table
 func (adapter *Adapter) DeleteNew(tenantID interface{}, tableName string, format string, item interface{}, value ...interface{}) error {
 	if tenantID != uuid.Nil {
-		formatStr := TenantIDStr + "=? AND " + format
-		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Delete(item).Error
+		formatStr := format + " AND " + TenantIDStr + " =?"
+		value = append(value, tenantID)
+		err := adapter.db.Table(tableName).Where(formatStr, value...).Delete(item).Error
 		return err
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value...).Delete(item).Error
@@ -141,8 +142,9 @@ func (adapter *Adapter) Find(tenantID interface{}, tableName string, format stri
 // Find function finds the value from the table
 func (adapter *Adapter) FindNew(tenantID interface{}, tableName string, format string, item interface{}, value ...interface{}) error {
 	if tenantID != uuid.Nil {
-		formatStr := TenantIDStr + "=? AND " + format
-		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Find(item).Error
+		formatStr := format + " AND " + TenantIDStr + " =?"
+		value = append(value, tenantID)
+		err := adapter.db.Table(tableName).Where(formatStr, value...).Find(item).Error
 		return err
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value...).Find(item).Error
@@ -203,8 +205,9 @@ func (adapter *Adapter) Updates(tenantID interface{}, tableName string, format s
 // UpdateNew function updates the value in the table
 func (adapter *Adapter) UpdateNew(tenantID interface{}, tableName string, format string, item interface{}, value ...interface{}) error {
 	if tenantID != uuid.Nil {
-		formatStr := TenantIDStr + "=? AND " + format
-		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Updates(item).Error
+		formatStr := format + " AND " + TenantIDStr + " =?"
+		value = append(value, tenantID)
+		err := adapter.db.Table(tableName).Where(formatStr, value...).Updates(item).Error
 		return err
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value...).Updates(item).Error
@@ -227,8 +230,9 @@ func (adapter *Adapter) Save(tenantID interface{}, tableName string, format stri
 // Save function save all the value in the table
 func (adapter *Adapter) SaveNew(tenantID interface{}, tableName string, format string, item interface{}, value ...interface{}) error {
 	if tenantID != uuid.Nil {
-		formatStr := TenantIDStr + "=? AND " + format
-		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Save(item).Error
+		formatStr := format + " AND " + TenantIDStr + " =?"
+		value = append(value, tenantID)
+		err := adapter.db.Table(tableName).Where(formatStr, value...).Save(item).Error
 		return err
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value...).Save(item).Error
