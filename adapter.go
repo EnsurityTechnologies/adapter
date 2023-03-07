@@ -10,6 +10,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 const (
@@ -36,15 +37,15 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	switch cfg.DBType {
 	case sqlDB:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
-		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
 	case postgressDB:
 		dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.DBAddress, cfg.DBPort, cfg.DBUserName, cfg.DBName, cfg.DBPassword)
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
 	case sqlite3:
-		db, err = gorm.Open(sqlite.Open(cfg.DBAddress), &gorm.Config{})
+		db, err = gorm.Open(sqlite.Open(cfg.DBAddress), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
 	default:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
 	}
 
 	if err != nil {
@@ -65,13 +66,13 @@ func (adapter *Adapter) GetDB() *gorm.DB {
 
 // InitTable Initialize table
 func (adapter *Adapter) InitTable(tableName string, item interface{}) error {
-	err := adapter.db.Table(tableName).AutoMigrate(item)
+	err := adapter.db.Table(tableName).Migrator().AutoMigrate(item)
 	return err
 }
 
 // InitTable Initialize table
 func (adapter *Adapter) InitTwoTable(tableName string, item1 interface{}, item2 interface{}) error {
-	err := adapter.db.Table(tableName).AutoMigrate(item1, item2)
+	err := adapter.db.Table(tableName).Migrator().AutoMigrate(item1, item2)
 	return err
 }
 
