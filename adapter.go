@@ -37,15 +37,15 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	switch cfg.DBType {
 	case sqlDB:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
-		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
+		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	case postgressDB:
 		dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.DBAddress, cfg.DBPort, cfg.DBUserName, cfg.DBName, cfg.DBPassword)
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	case sqlite3:
-		db, err = gorm.Open(sqlite.Open(cfg.DBAddress), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
+		db, err = gorm.Open(sqlite.Open(cfg.DBAddress), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	default:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
-		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Error)})
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	}
 
 	if err != nil {
@@ -65,9 +65,16 @@ func (adapter *Adapter) GetDB() *gorm.DB {
 }
 
 // InitTable Initialize table
-func (adapter *Adapter) InitTable(tableName string, item interface{}) error {
-	err := adapter.db.Table(tableName).Migrator().AutoMigrate(item)
-	return err
+func (adapter *Adapter) InitTable(tableName string, item interface{}, force bool) error {
+	m := adapter.db.Table(tableName).Migrator()
+	if force {
+		return m.AutoMigrate(item)
+	} else {
+		if !m.HasTable(item) {
+			return m.AutoMigrate(item)
+		}
+		return nil
+	}
 }
 
 // InitTable Initialize table
