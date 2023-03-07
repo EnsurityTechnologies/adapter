@@ -5,10 +5,11 @@ import (
 
 	"github.com/EnsurityTechnologies/config"
 	"github.com/EnsurityTechnologies/uuid"
-	"github.com/jinzhu/gorm"
-
-	_ "github.com/jinzhu/gorm/dialects/mssql"
-	_ "github.com/mattn/go-sqlite3" // Blank import needed to import sqlite3
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlserver"
+	"gorm.io/gorm"
 )
 
 const (
@@ -35,19 +36,15 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	switch cfg.DBType {
 	case sqlDB:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
-		db, err = gorm.Open("mssql", dsn)
+		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
 	case postgressDB:
 		dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.DBAddress, cfg.DBPort, cfg.DBUserName, cfg.DBName, cfg.DBPassword)
-		db, err = gorm.Open("postgres", dsn)
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	case sqlite3:
-		db, err = gorm.Open("sqlite3", cfg.DBAddress)
-		if err == nil {
-			db.LogMode(false)
-			db.DB().SetMaxOpenConns(1)
-		}
+		db, err = gorm.Open(sqlite.Open(cfg.DBAddress), &gorm.Config{})
 	default:
 		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
-		db, err = gorm.Open("mssql", dsn)
+		db, err = gorm.Open(mysql.Open(dsn), &gorm.Config{})
 	}
 
 	if err != nil {
@@ -68,19 +65,19 @@ func (adapter *Adapter) GetDB() *gorm.DB {
 
 // InitTable Initialize table
 func (adapter *Adapter) InitTable(tableName string, item interface{}) error {
-	err := adapter.db.Table(tableName).AutoMigrate(item).Error
+	err := adapter.db.Table(tableName).AutoMigrate(item)
 	return err
 }
 
 // InitTable Initialize table
 func (adapter *Adapter) InitTwoTable(tableName string, item1 interface{}, item2 interface{}) error {
-	err := adapter.db.Table(tableName).AutoMigrate(item1, item2).Error
+	err := adapter.db.Table(tableName).AutoMigrate(item1, item2)
 	return err
 }
 
 // DropTable drop the table
-func (adapter *Adapter) DropTable(tableName string) error {
-	err := adapter.db.DropTable(tableName).Error
+func (adapter *Adapter) DropTable(tableName string, item interface{}) error {
+	err := adapter.db.Table(tableName).Migrator().DropTable(item)
 	return err
 }
 
@@ -92,8 +89,9 @@ func (adapter *Adapter) DropTable(tableName string) error {
 
 // DropTable drop the table
 func (adapter *Adapter) AddForienKey(tableName string, value interface{}, colStr string, tableStr string) error {
-	err := adapter.db.Table(tableName).Model(value).AddForeignKey(colStr, tableStr, "CASCADE", "CASCADE").Error
-	return err
+	// err := adapter.db.Table(tableName).Model(value).AddForeignKey(colStr, tableStr, "CASCADE", "CASCADE").Error
+	// return err
+	return nil
 }
 
 // Delete function delete entry from the table
@@ -127,6 +125,12 @@ func (adapter *Adapter) Create(tableName string, item interface{}) error {
 	return err
 }
 
+// Create creates and stores the new item in the table
+func (adapter *Adapter) CreateInBatches(tableName string, item interface{}, batchSize int) error {
+	err := adapter.db.Table(tableName).CreateInBatches(item, batchSize).Error
+	return err
+}
+
 // Find function finds the value from the table
 func (adapter *Adapter) Find(tenantID interface{}, tableName string, format string, value interface{}, item interface{}) error {
 	if tenantID != uuid.Nil {
@@ -148,6 +152,18 @@ func (adapter *Adapter) FindNew(tenantID interface{}, tableName string, format s
 		return err
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value...).Find(item).Error
+		return err
+	}
+}
+
+func (adapter *Adapter) FindWithOffset(tenantID interface{}, tableName string, format string, item interface{}, offset int, limit int, value ...interface{}) error {
+	if tenantID != uuid.Nil {
+		formatStr := format + " AND " + TenantIDStr + " =?"
+		value = append(value, tenantID)
+		err := adapter.db.Table(tableName).Where(formatStr, value...).Offset(offset).Limit(limit).Find(item).Error
+		return err
+	} else {
+		err := adapter.db.Table(tableName).Where(format, value...).Offset(offset).Limit(limit).Find(item).Error
 		return err
 	}
 }
@@ -182,7 +198,7 @@ func (adapter *Adapter) FindAnd(tenantID interface{}, tableName string, format1 
 func (adapter *Adapter) FindA(tenantID interface{}, tableName string, format string, value interface{}, item interface{}, item1 interface{}) error {
 	if tenantID != uuid.Nil {
 		formatStr := TenantIDStr + "=? AND " + format
-		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Find(item).Association("UserId").Find(item1).Error
+		err := adapter.db.Table(tableName).Where(formatStr, tenantID, value).Find(item).Association("UserId").Find(item1)
 		return err
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value).Find(item).Error
@@ -237,5 +253,23 @@ func (adapter *Adapter) SaveNew(tenantID interface{}, tableName string, format s
 	} else {
 		err := adapter.db.Table(tableName).Where(format, value...).Save(item).Error
 		return err
+	}
+}
+
+func (adapter *Adapter) GetCount(tenantID interface{}, tableName string, format string, value ...interface{}) int64 {
+	var count int64
+	var err error
+	if tenantID != uuid.Nil {
+		formatStr := format + " AND " + TenantIDStr + " =?"
+		value = append(value, tenantID)
+		err = adapter.db.Table(tableName).Where(formatStr, value...).Count(&count).Error
+
+	} else {
+		err = adapter.db.Table(tableName).Where(format, value...).Count(&count).Error
+	}
+	if err != nil {
+		return 0
+	} else {
+		return count
 	}
 }
