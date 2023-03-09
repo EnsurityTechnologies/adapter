@@ -156,11 +156,21 @@ func (adapter *Adapter) FindNew(tenantID interface{}, tableName string, format s
 	if tenantID != uuid.Nil {
 		formatStr := format + " AND " + TenantIDStr + " =?"
 		value = append(value, tenantID)
-		err := adapter.db.Table(tableName).Where(formatStr, value...).Find(item).Error
-		return err
+		result := adapter.db.Table(tableName).Where(formatStr, value...).Find(item)
+		if result.Error == nil {
+			if result.RowsAffected == 0 {
+				return fmt.Errorf("no records found")
+			}
+		}
+		return result.Error
 	} else {
-		err := adapter.db.Table(tableName).Where(format, value...).Find(item).Error
-		return err
+		result := adapter.db.Table(tableName).Where(format, value...).Find(item)
+		if result.Error == nil {
+			if result.RowsAffected == 0 {
+				return fmt.Errorf("no records found")
+			}
+		}
+		return result.Error
 	}
 }
 
@@ -168,11 +178,21 @@ func (adapter *Adapter) FindWithOffset(tenantID interface{}, tableName string, f
 	if tenantID != uuid.Nil {
 		formatStr := format + " AND " + TenantIDStr + " =?"
 		value = append(value, tenantID)
-		err := adapter.db.Table(tableName).Where(formatStr, value...).Offset(offset).Limit(limit).Find(item).Error
-		return err
+		result := adapter.db.Table(tableName).Where(formatStr, value...).Offset(offset).Limit(limit).Find(item)
+		if result.Error == nil {
+			if result.RowsAffected == 0 {
+				return fmt.Errorf("no records found")
+			}
+		}
+		return result.Error
 	} else {
-		err := adapter.db.Table(tableName).Where(format, value...).Offset(offset).Limit(limit).Find(item).Error
-		return err
+		result := adapter.db.Table(tableName).Where(format, value...).Offset(offset).Limit(limit).Find(item)
+		if result.Error == nil {
+			if result.RowsAffected == 0 {
+				return fmt.Errorf("no records found")
+			}
+		}
+		return result.Error
 	}
 }
 
