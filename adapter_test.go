@@ -1,8 +1,9 @@
 package adapter
 
 import (
+	"encoding/json"
 	"fmt"
-	"os"
+	"io/ioutil"
 	"testing"
 
 	"github.com/EnsurityTechnologies/config"
@@ -17,16 +18,29 @@ type model struct {
 }
 
 func TestBasic(t *testing.T) {
-	cfg := &config.Config{
-		DBAddress: "test.db",
-		DBType:    "Sqlite3",
+	rb, err := ioutil.ReadFile("config.json")
+	if err != nil {
+		t.Fatal("Failed to read config file")
 	}
-	ad, err := NewAdapter(cfg)
+	var cfg config.Config
+
+	err = json.Unmarshal(rb, &cfg)
+	if err != nil {
+		t.Fatal("Failed to parse config file")
+	}
+	ad, err := NewAdapter(&cfg)
 	if err != nil {
 		t.Fatal("Failed to initialize adapter")
 	}
-	if err := ad.InitTable("user", &model{}); err != nil {
+
+	if err := ad.InitTable("user", &model{}, true); err != nil {
 		t.Fatal("Failed to initialize table", err.Error())
+	}
+	//defer ad.DropTable("user", &model{})
+	var rm model
+	err = ad.FindNew(uuid.Nil, "user", "Name=?", &rm, "TestUser1")
+	if err == nil {
+		t.Fatal("DB should no thave data")
 	}
 	if err := ad.Create("user", &model{Name: "TestUser1", Age: 32, Address: "Hyderabad"}); err != nil {
 		t.Fatal("Failed to create data", err.Error())
@@ -73,8 +87,4 @@ func TestBasic(t *testing.T) {
 	if err := db.Close(); err != nil {
 		t.Fatal("Failed to close db", err.Error())
 	}
-	if err := os.Remove("test.db"); err != nil {
-		t.Fatal("Failed to delete db", err.Error())
-	}
-
 }

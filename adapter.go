@@ -2,6 +2,7 @@ package adapter
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/EnsurityTechnologies/config"
 	"github.com/EnsurityTechnologies/uuid"
@@ -36,7 +37,8 @@ func NewAdapter(cfg *config.Config) (*Adapter, error) {
 	var err error
 	switch cfg.DBType {
 	case sqlDB:
-		dsn := fmt.Sprintf("sqlserver://%s:%s@%s:%s?database=%s", cfg.DBUserName, cfg.DBPassword, cfg.DBAddress, cfg.DBPort, cfg.DBName)
+		userPwd := url.UserPassword(cfg.DBUserName, cfg.DBPassword)
+		dsn := fmt.Sprintf("sqlserver://%s@%s:%s?database=%s", userPwd, cfg.DBAddress, cfg.DBPort, cfg.DBName)
 		db, err = gorm.Open(sqlserver.Open(dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	case postgressDB:
 		dsn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=disable", cfg.DBAddress, cfg.DBPort, cfg.DBUserName, cfg.DBName, cfg.DBPassword)
